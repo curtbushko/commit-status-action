@@ -1,0 +1,52 @@
+# Copyright (c) Curt Bushko.
+# SPDX-License-Identifier: MPL-2.0
+
+name: "commit-status-action"
+description: "A github action to update the status on a commit"
+author: "curtbushko"
+branding:
+  icon: "thumbs-up"
+  color: "green"
+inputs:
+  token:
+    description: "GITHUB_TOKEN or your own token if you need to update status checks to another repo"
+    required: true
+  state:
+    description: "The status of the check: success, error, failure, pending or cancelled"
+    required: true
+  context:
+    description: "The context, this is displayed as the name of the check"
+    default: "default"
+    required: false
+  description:
+    description: "Short text explaining the status of the check"
+    default: ""
+    required: false
+  owner:
+    description: "Repostory owner"
+    default: ${{ github.repository_owner }}
+    required: false
+  repository:
+    description: "Repository"
+    default: ${{ github.repository }}
+    required: false
+  sha:
+    description: "SHA of commit to update status on"
+    default: ${{ github.sha }}
+    required: false
+  details_url:
+    description: "URL/URI to use for further details."
+    required: false
+
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+  - "-token=${{ inputs.token }}"
+  - "-state=${{ inputs.state }}"
+  - "-context=${{ inputs.context }}"
+  - "-description=${{ inputs.description }}"
+  - "-owner=${{ inputs.owner }}"
+  - "-repository=${{ inputs.repository }}"
+  - "-sha=${{ inputs.sha }}"
+  - "-details_url=${{ inputs.details_url }}"
