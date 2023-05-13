@@ -21,6 +21,18 @@ func TestGetAndValidateState(t *testing.T) {
 			expectedValue: "success",
 			expectError:   false,
 		},
+		{
+			name:          "fail with invalid state",
+			actual:        "foo",
+			expectedValue: "",
+			expectError:   true,
+		},
+		{
+			name:          "change cancelled to error",
+			actual:        "cancelled",
+			expectedValue: "error",
+			expectError:   false,
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

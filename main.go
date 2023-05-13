@@ -40,10 +40,9 @@ func main() {
 // 'cancel' or 'cancelled' then return 'error' as the state. 'Cancelled' can be a valid
 // state if a workflow is cancelled.
 func getAndValidateState(s string) (string, error) {
-
 	switch s {
 	// success, error, failure or pending
-	case "success", "error", "failure", "pending":
+	case "error", "failure", "pending", "success":
 		return s, nil
 	case "cancel", "cancelled":
 		return "error", nil
