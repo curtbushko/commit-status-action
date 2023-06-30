@@ -54,6 +54,22 @@ func main() {
 		in.owner = owner
 	}
 
+	if in.repository == "" {
+		repo, err := getRepository()
+		if err != nil {
+			actions.Fatalf(err.Error())
+		}
+		in.repository = repo
+	}
+
+	if in.sha == "" {
+		sha, err := getSHA()
+		if err != nil {
+			actions.Fatalf(err.Error())
+		}
+		in.sha = sha
+	}
+
 	fmt.Println(in)
 }
 
