@@ -52,6 +52,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ github.repository }}/:latest
+          tags: ${{ github.repository }}:latest
           build-args: GO_VERSION=${{ needs.get-go-version.outputs.go-version }}
 
