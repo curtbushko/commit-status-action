@@ -20,7 +20,7 @@ jobs:
         # version, because "goenv" can react to it automatically.
         run: |
           echo "Building with Go $(cat .go-version)"
-          echo "::set-output name=go-version::$(cat .go-version)"
+          run: echo "go-version=$(cat .go-version)" >> $GITHUB_OUTPUT
 
   build:
     needs:
@@ -45,7 +45,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ env.GHCR_PAT }}
+          password: ${{ env.GITHUB_TOKEN }}
 
       - name: Build and push
         uses: docker/build-push-action@v4
