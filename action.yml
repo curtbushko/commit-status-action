@@ -1,6 +1,5 @@
 # Copyright (c) Curt Bushko.
 # SPDX-License-Identifier: MPL-2.0
-
 name: "commit-status-action"
 description: "A github action to update the status on a commit"
 author: "curtbushko"

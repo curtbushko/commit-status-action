@@ -4,11 +4,16 @@
 package main
 
 import (
+	//"context"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 
+	//"github.com/google/go-github/v53/github"
 	"github.com/hashicorp/go-multierror"
 	actions "github.com/sethvargo/go-githubactions"
+	//"golang.org/x/oauth2"
 )
 
 const tokenRequiredErr = "token is a required field"
@@ -70,6 +75,20 @@ func main() {
 		in.sha = sha
 	}
 
+	// ctx := context.Background()
+	// ts := oauth2.StaticTokenSource(
+	// 	&oauth2.Token{AccessToken: in.token},
+	// )
+	// tc := oauth2.NewClient(ctx, ts)
+	//
+	// client := github.NewClient(tc)
+	//
+	// // list all repositories for the authenticated user
+	// repos, _, err := client.Repositories.List(ctx, "", nil)
+	// if err != nil {
+	// 	actions.Fatalf(err.Error())
+	// }
+
 	fmt.Println(in)
 }
 
@@ -78,14 +97,24 @@ func main() {
 func getRequiredInputs(in input) error {
 	var err *multierror.Error
 	if in.token == "" {
-		err = multierror.Append(err, fmt.Errorf(tokenRequiredErr))
+		err = multierror.Append(err, errors.New(tokenRequiredErr))
 	}
 
 	if in.state == "" {
-		err = multierror.Append(err, fmt.Errorf(stateRequiredErr))
+		err = multierror.Append(err, errors.New(stateRequiredErr))
 	}
 
-	return err.ErrorOrNil()
+	if err != nil {
+		err.ErrorFormat = func(errs []error) string {
+			var errStr []string
+			for _, e := range errs {
+				errStr = append(errStr, e.Error())
+			}
+			return strings.Join(errStr, ", ")
+		}
+		return err
+	}
+	return nil
 }
 
 // getRepositoryOwner gets github.repository_owner from the Github API

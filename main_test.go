@@ -5,10 +5,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -60,24 +60,19 @@ func TestRequiredInputs(t *testing.T) {
 	cases := []struct {
 		name   string
 		inputs input
-		errors []error
+		expErr string
 	}{
 		{
 			name:   "no_inputs_returns_all_required_fields",
 			inputs: input{},
-			errors: []error{
-				errors.New(tokenRequiredErr),
-				errors.New(stateRequiredErr),
-			},
+			expErr: fmt.Sprintf("%s, %s", tokenRequiredErr, stateRequiredErr),
 		},
 		{
 			name: "token_input_returns_required_fields",
 			inputs: input{
 				token: "foo",
 			},
-			errors: []error{
-				errors.New(stateRequiredErr),
-			},
+			expErr: stateRequiredErr,
 		},
 		{
 			name: "token_and_state_inputs_returns_no_errors",
@@ -85,14 +80,15 @@ func TestRequiredInputs(t *testing.T) {
 				token: "foo",
 				state: "bar",
 			},
-			errors: nil,
+			expErr: "",
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			multiErr := &multierror.Error{Errors: c.errors}
 			err := getRequiredInputs(c.inputs)
-			require.Equal(t, multiErr.ErrorOrNil(), err)
+			if c.expErr != "" {
+				require.EqualError(t, err, c.expErr)
+			}
 		})
 	}
 }

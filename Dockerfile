@@ -1,24 +1,28 @@
 # Copyright (c) Curt Bushko.
 # SPDX-License-Identifier: MPL-2.0
+FROM golang:1.18 AS builder
+MAINTAINER Curt Bushko (https://github.com/curtbushko)
 
-FROM golang:1.18 as build
-MAINTAINER Curt Bushko
-
-# Copy all the action files into the container
-WORKDIR /go/src/action
-COPY action /go/src/action
-
-# Enable Go modules
 ENV GO111MODULE=on
-RUN go get -d -v
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
 
-# Compile the action
-RUN CGO_ENABLED=0 go build -o /action -ldflags="-s -w" action.go
+RUN apt-get -qq update && apt-get -yqq install upx file
 
-FROM alpine:latest
-RUN apk --update add ca-certificates
-RUN apk add --no-cache git make bash
+WORKDIR /src
+COPY . .
 
-COPY --from=build /action /
-# Specify the container's entrypoint as the action
-ENTRYPOINT ["/action"]
+RUN mkdir -p /bin && go build -o /bin/action .
+
+RUN echo "nobody:x:65534:65534:Nobody:/:" > /etc_passwd
+
+FROM scratch
+MAINTAINER Curt Bushko (https://github.com/curtbushko)
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /etc_passwd /etc/passwd
+COPY --from=builder --chown=65534:0 /bin/action /action
+
+USER nobody
+CMD /action
