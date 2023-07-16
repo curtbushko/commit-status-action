@@ -13,7 +13,7 @@ jobs:
     outputs:
       go-version: ${{ steps.get-go-version.outputs.go-version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Determine Go version
         id: get-go-version
         # We use .go-version as our source of truth for current Go
@@ -34,7 +34,7 @@ jobs:
       fail-fast: true
     name: Go ${{ matrix.goos }} ${{ matrix.goarch }} build
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
           go-version: ${{ needs.get-go-version.outputs.go-version }}
@@ -52,4 +52,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ github.repository_owner }}:latest
+          tags: ${{ github.repository }}/:latest
+          build-args: GO_VERSION=${{ needs.get-go-version.outputs.go-version }}
+

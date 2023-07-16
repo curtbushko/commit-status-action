@@ -1,6 +1,7 @@
 # Copyright (c) Curt Bushko.
 # SPDX-License-Identifier: MPL-2.0
-FROM golang:1.18 AS builder
+ARG GO_VERSION=1.18
+FROM golang:${GO_VERSION} AS builder
 MAINTAINER Curt Bushko (https://github.com/curtbushko)
 
 ENV GO111MODULE=on
