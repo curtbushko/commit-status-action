@@ -4,16 +4,15 @@
 package main
 
 import (
-	//"context"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
-	//"github.com/google/go-github/v53/github"
+	//"github.com/google/go-github/v53/github".
 	"github.com/hashicorp/go-multierror"
 	actions "github.com/sethvargo/go-githubactions"
-	//"golang.org/x/oauth2"
+	//"golang.org/x/oauth2".
 )
 
 const tokenRequiredErr = "token is a required field"
@@ -30,7 +29,7 @@ type input struct {
 	owner       string
 	repository  string
 	sha         string
-	detailsUrl  string
+	detailsURL  string
 }
 
 func main() {
@@ -43,7 +42,7 @@ func main() {
 		owner:       actions.GetInput("owner"),
 		repository:  actions.GetInput("repository"),
 		sha:         actions.GetInput("sha"),
-		detailsUrl:  actions.GetInput("details_url"),
+		detailsURL:  actions.GetInput("details_url"),
 	}
 
 	err := getRequiredInputs(in)
@@ -93,7 +92,7 @@ func main() {
 }
 
 // getRequiredInputs checks the required inputs and returns an error
-// if they are not set
+// if they are not set.
 func getRequiredInputs(in input) error {
 	var err *multierror.Error
 	if in.token == "" {
@@ -117,7 +116,7 @@ func getRequiredInputs(in input) error {
 	return nil
 }
 
-// getRepositoryOwner gets github.repository_owner from the Github API
+// getRepositoryOwner gets github.repository_owner from the Github API.
 func getOwner() (string, error) {
 	owner := os.Getenv("GITHUB_OWNER")
 	if owner == "" {
@@ -126,7 +125,7 @@ func getOwner() (string, error) {
 	return owner, nil
 }
 
-// getRepositoryOwner gets github.repository_owner from the Github API
+// getRepositoryOwner gets github.repository_owner from the Github API.
 func getRepository() (string, error) {
 	repo := os.Getenv("GITHUB_REPOSITORY")
 	if repo == "" {
@@ -135,7 +134,7 @@ func getRepository() (string, error) {
 	return repo, nil
 }
 
-// getRepositoryOwner gets github.repository_owner from the Github API
+// getRepositoryOwner gets github.repository_owner from the Github API.
 func getSHA() (string, error) {
 	sha := os.Getenv("GITHUB_SHA")
 	if sha == "" {

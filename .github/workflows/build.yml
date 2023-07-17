@@ -1,4 +1,3 @@
-
 name: build
 
 on: [workflow_dispatch, push]
@@ -20,7 +19,14 @@ jobs:
         # version, because "goenv" can react to it automatically.
         run: |
           echo "Building with Go $(cat .go-version)"
-          echo "go-version=$(make version)" >> $GITHUB_OUTPUT
+          echo "go-version=$(make version)" >> "${GITHUB_OUTPUT}"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Lint everything
+        run: make lint 
 
   build:
     needs:
@@ -30,7 +36,6 @@ jobs:
       matrix:
         goos: [linux]
         goarch: [amd64]
-
       fail-fast: true
     name: Go ${{ matrix.goos }} ${{ matrix.goarch }} build
     steps:
@@ -40,6 +45,12 @@ jobs:
           go-version: ${{ needs.get-go-version.outputs.go-version }}
       - run: make build
 
+  docker:
+    needs:
+      - get-go-version
+      - build
+    runs-on: ubuntu-latest
+    steps:
       - name: Login to GHCR
         uses: docker/login-action@v2
         with:
@@ -54,4 +65,3 @@ jobs:
           push: true
           tags: ${{ github.repository }}:latest
           build-args: GO_VERSION=${{ needs.get-go-version.outputs.go-version }}
-
