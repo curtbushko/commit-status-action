@@ -3,6 +3,7 @@
 ARG GOVERSION=1.18
 FROM golang:${GOVERSION} AS builder
 MAINTAINER Curt Bushko (https://github.com/curtbushko)
+LABEL org.opencontainers.image.source=https://github.com/curtbushko/commit-status-action
 
 ENV GO111MODULE=on
 ENV CGO_ENABLED=0

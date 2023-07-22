@@ -2,9 +2,6 @@ name: build
 
 on: [workflow_dispatch, push]
 
-env:
-  GHCR_PAT: ${{ secrets.GHCR_PAT }}
-
 jobs:
   get-go-version:
     name: "Determine Go toolchain version"
@@ -73,5 +70,5 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{ github.repository }}:latest
+          tags: ghcr.io/${{ github.repository }}:latest
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}

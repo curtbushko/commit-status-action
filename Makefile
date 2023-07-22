@@ -1,7 +1,7 @@
 # get the repo root and output path
 REPO_ROOT:=${CURDIR}
 BIN_PATH=$(REPO_ROOT)/bin
-IMAGE_TAG="curtbushko/commit-status-action"
+IMAGE_TAG=curtbushko/commit-status-action
 # record the source commit in the binary, overridable.
 COMMIT?=$(shell git rev-parse HEAD 2>/dev/null)
 GOVERSION:=$(shell cat .go-version)
@@ -28,7 +28,7 @@ test:
 
 .PHONY: docker-build
 docker-build:
-	docker build --build-arg GOVERSION=${GOVERSION} -t $(IMAGE_TAG):latest .
+	docker build --build-arg GOVERSION=${GOVERSION} -t ghcr.io/$(IMAGE_TAG):latest .
 
 .PHONY: lint
 lint:
