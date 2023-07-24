@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: commit status action
-        uses: docker://ghrcr.io/curtbushko/commit-status-action:latest
+        uses: docker://ghcr.io/curtbushko/commit-status-action:latest
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           state: success
