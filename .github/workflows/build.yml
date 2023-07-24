@@ -72,3 +72,21 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:latest
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
+
+  test:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - name: commit status action
+        uses: docker://ghrcr.io/${{ github.repository }}:latest
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          state: success
+          context: testContext 
+          description: testDescription
+          owner: ${{ github.repository_owner }}
+          repository: ${{ github.repository }}
+          sha: ${{ github.sha }}
+          details_url: "http://foo"
+
