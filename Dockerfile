@@ -27,4 +27,4 @@ COPY --from=builder /etc_passwd /etc/passwd
 COPY --from=builder --chown=65534:0 /bin/action /action
 
 USER nobody
-CMD /action
+ENTRYPOINT ["/action"]
