@@ -1,6 +1,8 @@
 name: build
-
 on: [workflow_dispatch, push]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   get-go-version:
