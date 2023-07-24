@@ -40,12 +40,3 @@ inputs:
 runs:
   using: docker
   image: Dockerfile
-  args:
-    - "-token=${{ inputs.token }}"
-    - "-state=${{ inputs.state }}"
-    - "-context=${{ inputs.context }}"
-    - "-description=${{ inputs.description }}"
-    - "-owner=${{ inputs.owner }}"
-    - "-repository=${{ inputs.repository }}"
-    - "-sha=${{ inputs.sha }}"
-    - "-details_url=${{ inputs.details_url }}"
