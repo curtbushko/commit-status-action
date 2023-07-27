@@ -19,20 +19,6 @@ jobs:
         run: |
           echo "Building with Go $(cat .go-version)"
           echo "go-version=$(cat .go-version)" >> "${GITHUB_OUTPUT}"
-  # get-sha is needed because github.sha is not allowed in certain context. Very silly.
-  get-sha:
-    runs-on: ubuntu-latest
-    outputs:
-      short-sha: ${{ steps.get-sha.outputs.short-sha }}
-      long-sha: ${{ steps.get-sha.outputs.long-sha }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Determine SHA 
-        id: get-sha
-        run: |
-          echo "Getting short SHA "
-          echo "short-sha=$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
-          echo "long-sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
 
   lint:
     needs:
@@ -68,7 +54,6 @@ jobs:
 
   docker:
     needs:
-      - get-sha
       - get-go-version
       - build
     runs-on: ubuntu-latest
@@ -87,18 +72,17 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ghcr.io/curtbushko/commit-status-action:${{ needs.get-sha.outputs.short-sha }}
+          tags: ghcr.io/curtbushko/commit-status-action:${{ github.event.pull_request.head.sha || github.sha }}
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
 
   test:
     needs:
-      - get-sha
       - build
       - docker
     runs-on: ubuntu-latest
     steps:
       - name: commit status action
-        uses: docker://ghcr.io/curtbushko/commit-status-action:${{ needs.get-sha.outputs.short-sha }}
+        uses: docker://ghcr.io/curtbushko/commit-status-action:${{ github.event.pull_request.head.sha || github.sha }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           state: ${{ job.status }}
@@ -106,6 +90,6 @@ jobs:
           description: "Integration test"
           owner: ${{ github.repository_owner }}
           repository: ${{ github.repository }}
-          sha: ${{ needs.get-sha.outputs.long-sha }}
+          sha: ${{ github.event.pull_request.head.sha || github.sha }}
           details_url: "http://foo"
 
