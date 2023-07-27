@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: commit status action
-        uses: docker://ghcr.io/curtbushko/commit-status-action:${{ needs.get-shas.outputs.short-sha }}
+        uses: docker://ghcr.io/curtbushko/commit-status-action@${{ needs.get-shas.outputs.short-sha }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           state: ${{ job.status }}
