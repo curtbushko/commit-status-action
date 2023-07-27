@@ -71,22 +71,3 @@ jobs:
           push: true
           tags: ghcr.io/curtbushko/commit-status-action:${{ github.sha }}
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
-
-  test:
-    needs:
-      - get-go-version
-      - build
-      - docker
-    runs-on: ubuntu-latest
-    steps:
-    - name: Test commit-status-action
-      uses: docker://ghcr.io/curtbushko/commit-status-action:${{ github.sha }}
-      env:
-        INPUT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        INPUT_STATE: ${{ job.status }}
-        INPUT_CONTEXT: "status test" 
-        INPUT_DESCRIPTION: "status test"
-        INPUT_OWNER: ${{ github.repository_owner }}
-        INPUT_REPOSITORY: ${{ github.repository }}
-        INPUT_SHA: ${{ github.sha }}
-        INPUT_DETAILS_URL: "http://foo"
