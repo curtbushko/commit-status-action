@@ -73,6 +73,10 @@ jobs:
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
 
   test:
+    needs:
+      - get-go-version
+      - build
+      - docker
     runs-on: ubuntu-latest
     steps:
     - name: Test commit-status-action
