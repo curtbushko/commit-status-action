@@ -39,6 +39,9 @@ jobs:
 
 Where the tag for the commit-status-action image is listed [as a package in ghcr.io](https://github.com/curtbushko/commit-status-action/pkgs/container/commit-status-action)
 
+### Using a PAT Token
+
+When updating a status across repos, a PAT token should be used. It should have `repo: status` permissions (classic).
 
 ### Running locally
 
