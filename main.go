@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v53/github"
 	"github.com/hashicorp/go-multierror"
 	actions "github.com/sethvargo/go-githubactions"
+	"github.com/sethvargo/go-retry"
 	"golang.org/x/oauth2"
 )
 
@@ -84,17 +86,27 @@ func main() {
 	client := github.NewClient(tc)
 
 	status := &github.RepoStatus{
+		State:       &in.state,
 		Context:     &in.context,
 		Description: &in.description,
 		TargetURL:   &in.detailsURL,
 	}
 
-	status, _, err = client.Repositories.CreateStatus(context.Background(), in.owner, in.repository, in.sha, status)
-	if err != nil {
+	// Do a fibonacci backoff 1s -> 1s -> 2s -> 3s -> 5s -> 8s
+	if err := retry.Do(ctx, retry.WithMaxRetries(5, retry.NewFibonacci(1*time.Second)), func(ctx context.Context) error {
+		status, _, err = client.Repositories.CreateStatus(context.Background(), in.owner, in.repository, in.sha, status)
+		if err != nil {
+			actions.Errorf(err.Error())
+			// This marks the error as retryable
+			return retry.RetryableError(err)
+		}
+		return nil
+	}); err != nil {
 		actions.Fatalf(err.Error())
 	}
 
-	fmt.Println("updated status, ID:", *status.ID)
+	commitURL := fmt.Sprintf("https://github.com/%s/%s/commits/%s", in.owner, in.repository, in.sha)
+	actions.Infof("Updated status: \nID: %d \nState: %s \nURL: %s ", *status.ID, in.state, commitURL)
 }
 
 // getRequiredInputs checks the required inputs and returns an error

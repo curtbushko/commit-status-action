@@ -72,7 +72,7 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ github.repository }}:${{ github.event.pull_request.head.sha || github.sha }}
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
 
   test:
@@ -82,12 +82,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: commit status action
-        uses: docker://ghcr.io/curtbushko/commit-status-action:latest
+        uses: docker://ghcr.io/curtbushko/commit-status-action:${{ github.event.pull_request.head.sha || github.sha }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          state: success
-          context: testContext 
-          description: testDescription
+          state: ${{ job.status }}
+          context: "Integration test" 
+          description: "Integration test"
           owner: ${{ github.repository_owner }}
           repository: ${{ github.repository }}
           sha: ${{ github.sha }}

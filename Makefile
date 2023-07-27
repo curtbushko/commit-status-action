@@ -29,7 +29,7 @@ test:
 .PHONY: integration-test 
 integration-test:
 	INPUT_TOKEN=${GITHUB_TOKEN} \
-	INPUT_STATE=success \
+	INPUT_STATE="success" \
 	INPUT_CONTEXT="status check test" \
 	INPUT_DESCRIPTION="testing.." \
 	INPUT_OWNER="curtbushko" \
