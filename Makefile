@@ -26,6 +26,18 @@ clean:
 test:
 	go test -v ./.
 
+.PHONY: integration-test 
+integration-test:
+	INPUT_TOKEN=${GITHUB_TOKEN} \
+	INPUT_STATE="success" \
+	INPUT_CONTEXT="status check test" \
+	INPUT_DESCRIPTION="testing.." \
+	INPUT_OWNER="curtbushko" \
+	INPUT_REPOSITORY="commit-status-action" \
+	INPUT_SHA=${COMMIT} \
+	INPUT_DETAILS_URL="https://foo" \
+	$(BIN_PATH)/action
+
 .PHONY: docker-build
 docker-build:
 	docker build --build-arg GOVERSION=${GOVERSION} -t ghcr.io/$(IMAGE_TAG):latest .

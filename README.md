@@ -15,3 +15,15 @@ A Github Action to update a commit status.
 | `sha` | SHA of the commit to update status on | false | github.sha |
 | `details_url` | URL/URI to use for further details | false | |
   
+
+### Running locally
+
+1) Build the binary by running `make build`
+2) Create a PAT token under [your github settings](https://github.com/settings/tokens). Export it as GITHUB_TOKEN.
+3) Run the command as:
+
+```
+INPUT_TOKEN=$GITHUB_TOKEN INPUT_STATE=success INPUT_CONTEXT="status check test" INPUT_DESCRIPTION="testing.."
+INPUT_OWNER="<your github account or org>" INPUT_REPOSITORY="<your github repository>" INPUT_SHA="<the SHA of a commit
+on github>" INPUT_DETAILS_URL="https://foo"./bin
+```

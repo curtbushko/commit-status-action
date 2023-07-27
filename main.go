@@ -4,16 +4,18 @@
 package main
 
 import (
-	//"context"
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
-	//"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v53/github"
 	"github.com/hashicorp/go-multierror"
 	actions "github.com/sethvargo/go-githubactions"
-	//"golang.org/x/oauth2"
+	"github.com/sethvargo/go-retry"
+	"golang.org/x/oauth2"
 )
 
 const tokenRequiredErr = "token is a required field"
@@ -75,21 +77,36 @@ func main() {
 		in.sha = sha
 	}
 
-	// ctx := context.Background()
-	// ts := oauth2.StaticTokenSource(
-	// 	&oauth2.Token{AccessToken: in.token},
-	// )
-	// tc := oauth2.NewClient(ctx, ts)
-	//
-	// client := github.NewClient(tc)
-	//
-	// // list all repositories for the authenticated user
-	// repos, _, err := client.Repositories.List(ctx, "", nil)
-	// if err != nil {
-	// 	actions.Fatalf(err.Error())
-	// }
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: in.token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
 
-	fmt.Println(in)
+	client := github.NewClient(tc)
+
+	status := &github.RepoStatus{
+		State:       &in.state,
+		Context:     &in.context,
+		Description: &in.description,
+		TargetURL:   &in.detailsURL,
+	}
+
+	// Do a fibonacci backoff 1s -> 1s -> 2s -> 3s -> 5s -> 8s
+	if err := retry.Do(ctx, retry.WithMaxRetries(5, retry.NewFibonacci(1*time.Second)), func(ctx context.Context) error {
+		status, _, err = client.Repositories.CreateStatus(context.Background(), in.owner, in.repository, in.sha, status)
+		if err != nil {
+			actions.Errorf(err.Error())
+			// This marks the error as retryable
+			return retry.RetryableError(err)
+		}
+		return nil
+	}); err != nil {
+		actions.Fatalf(err.Error())
+	}
+
+	commitURL := fmt.Sprintf("https://github.com/%s/%s/commits/%s", in.owner, in.repository, in.sha)
+	actions.Infof("Updated status: \nID: %d \nState: %s \nURL: %s ", *status.ID, in.state, commitURL)
 }
 
 // getRequiredInputs checks the required inputs and returns an error
