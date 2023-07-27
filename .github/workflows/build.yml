@@ -84,7 +84,7 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ghcr.io/curtbushko/commit-status-action:${{ needs.get-shas.outputs.short-sha }}
+          tags: ghcr.io/curtbushko/commit-status-action:${{ github.sha }}
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
 
   # test:
