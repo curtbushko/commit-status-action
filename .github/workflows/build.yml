@@ -17,6 +17,20 @@ jobs:
           echo "Building with Go $(cat .go-version)"
           echo "go-version=$(cat .go-version)" >> "${GITHUB_OUTPUT}"
 
+  get-shas:
+    runs-on: ubuntu-latest
+    outputs:
+      short-sha: ${{ steps.get-shas.outputs.short-sha }}
+      long-sha: ${{ steps.get-shas.outputs.long-sha }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Determine SHA 
+        id: get-shas
+        run: |
+          echo "Getting short SHA "
+          echo "short-sha=$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
+          echo "long-sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+
   lint:
     needs:
       - get-go-version
@@ -51,6 +65,7 @@ jobs:
 
   docker:
     needs:
+      - get-shas
       - get-go-version
       - build
     runs-on: ubuntu-latest
@@ -69,17 +84,18 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ghcr.io/curtbushko/commit-status-action:"${{ github.event.pull_request.head.sha || github.sha }}"
+          tags: ghcr.io/curtbushko/commit-status-action:"${{ needs.get-shas.outputs.short-sha }}"
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
 
   test:
     needs:
+      - get-shas
       - build
       - docker
     runs-on: ubuntu-latest
     steps:
       - name: commit status action
-        uses: docker://ghcr.io/curtbushko/commit-status-action:"${{ github.event.pull_request.head.sha || github.sha }}"
+        uses: docker://ghcr.io/curtbushko/commit-status-action:"${{ needs.get-shas.outputs.short-sha }}"
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           state: ${{ job.status }}
@@ -87,6 +103,6 @@ jobs:
           description: "Integration test"
           owner: ${{ github.repository_owner }}
           repository: ${{ github.repository }}
-          sha: "${{ github.event.pull_request.head.sha || github.sha }}"
+          sha: "${{ needs.get-shas.outputs.long-sha }}"
           details_url: "http://foo"
 
