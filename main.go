@@ -4,16 +4,16 @@
 package main
 
 import (
-	//"context"
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
-	//"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v53/github"
 	"github.com/hashicorp/go-multierror"
 	actions "github.com/sethvargo/go-githubactions"
-	//"golang.org/x/oauth2"
+	"golang.org/x/oauth2"
 )
 
 const tokenRequiredErr = "token is a required field"
@@ -75,21 +75,26 @@ func main() {
 		in.sha = sha
 	}
 
-	// ctx := context.Background()
-	// ts := oauth2.StaticTokenSource(
-	// 	&oauth2.Token{AccessToken: in.token},
-	// )
-	// tc := oauth2.NewClient(ctx, ts)
-	//
-	// client := github.NewClient(tc)
-	//
-	// // list all repositories for the authenticated user
-	// repos, _, err := client.Repositories.List(ctx, "", nil)
-	// if err != nil {
-	// 	actions.Fatalf(err.Error())
-	// }
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: in.token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
 
-	fmt.Println(in)
+	client := github.NewClient(tc)
+
+	status := &github.RepoStatus{
+		Context:     &in.context,
+		Description: &in.description,
+		TargetURL:   &in.detailsURL,
+	}
+
+	status, _, err = client.Repositories.CreateStatus(context.Background(), in.owner, in.repository, in.sha, status)
+	if err != nil {
+		actions.Fatalf(err.Error())
+	}
+
+	fmt.Println("updated status, ID:", *status.ID)
 }
 
 // getRequiredInputs checks the required inputs and returns an error
