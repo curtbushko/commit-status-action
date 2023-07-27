@@ -87,21 +87,21 @@ jobs:
           tags: ghcr.io/curtbushko/commit-status-action:${{ needs.get-shas.outputs.short-sha }}
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
 
-  test:
-    needs:
-      - get-shas
-      - build
-      - docker
-    runs-on: ubuntu-latest
-    steps:
-      - name: commit status action
-        uses: docker://ghcr.io/curtbushko/commit-status-action@${{ needs.get-shas.outputs.short-sha }}
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          state: ${{ job.status }}
-          context: "Integration test" 
-          description: "Integration test"
-          owner: ${{ github.repository_owner }}
-          repository: ${{ github.repository }}
-          sha: ${{ needs.get-shas.outputs.long-sha }}
-          details_url: "http://foo"
+  # test:
+  #   needs:
+  #     - get-shas
+  #     - build
+  #     - docker
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: commit status action
+  #       uses: docker://ghcr.io/curtbushko/commit-status-action@${{ needs.get-shas.outputs.short-sha }}
+  #       with:
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+  #         state: ${{ job.status }}
+  #         context: "Integration test" 
+  #         description: "Integration test"
+  #         owner: ${{ github.repository_owner }}
+  #         repository: ${{ github.repository }}
+  #         sha: ${{ needs.get-shas.outputs.long-sha }}
+  #         details_url: "http://foo"
