@@ -27,7 +27,7 @@ jobs:
       - name: Determine SHA 
         id: get-shas
         run: |
-          echo "Getting short SHA "
+          echo "Getting SHAs"
           echo "short-sha=$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
           echo "long-sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
 
@@ -84,7 +84,7 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ghcr.io/curtbushko/commit-status-action:"${{ needs.get-shas.outputs.short-sha }}"
+          tags: ghcr.io/curtbushko/commit-status-action:${{ needs.get-shas.outputs.short-sha }}
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
 
   test:
@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: commit status action
-        uses: docker://ghcr.io/curtbushko/commit-status-action:"${{ needs.get-shas.outputs.short-sha }}"
+        uses: docker://ghcr.io/curtbushko/commit-status-action:${{ needs.get-shas.outputs.short-sha }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           state: ${{ job.status }}
@@ -103,6 +103,5 @@ jobs:
           description: "Integration test"
           owner: ${{ github.repository_owner }}
           repository: ${{ github.repository }}
-          sha: "${{ needs.get-shas.outputs.long-sha }}"
+          sha: ${{ needs.get-shas.outputs.long-sha }}
           details_url: "http://foo"
-
