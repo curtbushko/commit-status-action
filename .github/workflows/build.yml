@@ -3,8 +3,6 @@ on: [workflow_dispatch, push, pull_request]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-env:
-  SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   get-go-version:
@@ -74,7 +72,7 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ env.SHA }}
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
 
   test:
@@ -84,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: commit status action
-        uses: docker://ghcr.io/curtbushko/commit-status-action:${{ env.SHA }}
+        uses: docker://ghcr.io/curtbushko/commit-status-action:${{ github.sha }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           state: ${{ job.status }}
