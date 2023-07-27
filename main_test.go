@@ -194,3 +194,31 @@ func TestGetSHAEnvironmentVariable(t *testing.T) {
 		})
 	}
 }
+
+func TestRemoveOwnerFromRepo(t *testing.T) {
+	cases := []struct {
+		name     string
+		repo     string
+		owner    string
+		expected string
+	}{
+		{
+			name:     "owner is in repo",
+			repo:     "foo/bar",
+			owner:    "foo",
+			expected: "bar",
+		},
+		{
+			name:     "owner is not in repo",
+			repo:     "bar",
+			owner:    "foo",
+			expected: "bar",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := removeOwnerFromRepository(c.repo, c.owner)
+			require.Equal(t, c.expected, got)
+		})
+	}
+}

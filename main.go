@@ -69,6 +69,8 @@ func main() {
 		in.repository = repo
 	}
 
+	in.repository = removeOwnerFromRepository(in.repository, in.owner)
+
 	if in.sha == "" {
 		sha, err := getSHA()
 		if err != nil {
@@ -174,4 +176,8 @@ func getAndValidateState(s string) (string, error) {
 	default:
 		return "", fmt.Errorf("state value not supported: %s", s)
 	}
+}
+
+func removeOwnerFromRepository(repo, owner string) string {
+	return strings.ReplaceAll(repo, fmt.Sprintf("%s/", owner), "")
 }
