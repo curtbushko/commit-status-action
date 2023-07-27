@@ -72,7 +72,7 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          tags: ghcr.io/${{ github.repository }}:12345
           build-args: GOVERSION=${{ needs.get-go-version.outputs.go-version }}
 
   test:
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: commit status action
-        uses: docker://ghcr.io/curtbushko/commit-status-action:${{ github.sha }}
+        uses: docker://ghcr.io/curtbushko/commit-status-action:12345
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           state: ${{ job.status }}
