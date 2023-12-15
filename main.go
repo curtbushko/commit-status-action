@@ -35,28 +35,129 @@ type input struct {
 	detailsURL  string
 }
 
+type ghRepositoryClient interface {
+	CreateStatus(context.Context, string, string, string, *github.RepoStatus) (*github.RepoStatus, *github.Response, error)
+}
+
+type getInputFunc func(string) string
+
+type ghClient struct {
+	client               ghRepositoryClient
+	input                input
+	maxConnectionRetries uint64
+}
+
 func main() {
-
-	in := input{
-		token:       actions.GetInput("token"),
-		state:       actions.GetInput("state"),
-		context:     actions.GetInput("context"),
-		description: actions.GetInput("description"),
-		owner:       actions.GetInput("owner"),
-		repository:  actions.GetInput("repository"),
-		sha:         actions.GetInput("sha"),
-		detailsURL:  actions.GetInput("details_url"),
-	}
-
-	err := getRequiredInputs(in)
+	ctx := context.Background()
+	client, err := newGHClient(ctx, uint64(5), actions.GetInput)
 	if err != nil {
 		actions.Fatalf(err.Error())
 	}
+	err = client.createStatus(ctx)
+	if err != nil {
+		actions.Fatalf(err.Error())
+	}
+}
 
+// newGHClient creates a new github client for creating a github repo status.
+func newGHClient(ctx context.Context, maxConnectionRetries uint64, getInputFunc getInputFunc) (ghClient, error) {
+	in, err := getInputs(getInputFunc)
+	if err != nil {
+		return ghClient{}, err
+	}
+
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: in.token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+
+	client := github.NewClient(tc).Repositories
+
+	return ghClient{
+		client:               client,
+		input:                in,
+		maxConnectionRetries: maxConnectionRetries,
+	}, nil
+}
+
+// createStatus creates a new github repo status.
+func (gh *ghClient) createStatus(ctx context.Context) error {
+	status := &github.RepoStatus{
+		State:       &gh.input.state,
+		Context:     &gh.input.context,
+		Description: &gh.input.description,
+		TargetURL:   &gh.input.detailsURL,
+	}
+
+	// Do a fibonacci backoff 1s -> 1s -> 2s -> 3s -> 5s -> 8s
+	var err error
+	err = retry.Do(ctx, retry.WithMaxRetries(gh.maxConnectionRetries, retry.NewFibonacci(1*time.Second)), func(ctx context.Context) error {
+		status, _, err = gh.client.CreateStatus(context.Background(), gh.input.owner, gh.input.repository, gh.input.sha, status)
+		if err != nil {
+			actions.Errorf("Error creating status %v. Owner: %s, SHA: %s, Repo %s: %s", gh.input.state, gh.input.owner, gh.input.sha, gh.input.repository, err.Error())
+			// This marks the error as retryable
+			return retry.RetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// We are going to access the status ID so make sure it is valid before proceeding.
+	if status.ID == nil {
+		return errors.New("status ID returned is nil")
+	}
+
+	commitURL := fmt.Sprintf("https://github.com/%s/%s/commits/%s", gh.input.owner, gh.input.repository, gh.input.sha)
+	actions.Infof("Updated status: \nID: %d \nState: %s \nURL: %s ", *status.ID, gh.input.state, commitURL)
+	return nil
+}
+
+// getInputs loads in all the inputs from the action and returns them as a struct.
+func getInputs(getInput getInputFunc) (input, error) {
+	// Read in Input
+	in := input{
+		token:       getInput("token"),
+		state:       getInput("state"),
+		context:     getInput("context"),
+		description: getInput("description"),
+		owner:       getInput("owner"),
+		repository:  getInput("repository"),
+		sha:         getInput("sha"),
+		detailsURL:  getInput("details_url"),
+	}
+
+	// Convert State to a repo status
+	var err error
+	in.state, err = convertActionStateToRepoStatusState(in.state)
+	if err != nil {
+		return input{}, err
+	}
+
+	// Set Input Defaults
+	in, err = setInputDefaults(in)
+	if err != nil {
+		return input{}, err
+	}
+
+	// Validate inputs before proceeding
+	err = validateRequiredInputs(in)
+	if err != nil {
+		return input{}, err
+	}
+
+	return in, err
+}
+
+// setInputDefaults sets the default values for inputs that are not required.
+func setInputDefaults(in input) (input, error) {
+	// Set Defaults
 	if in.owner == "" {
 		owner, err := getOwner()
 		if err != nil {
-			actions.Fatalf(err.Error())
+			return input{}, err
 		}
 		in.owner = owner
 	}
@@ -64,79 +165,51 @@ func main() {
 	if in.repository == "" {
 		repo, err := getRepository()
 		if err != nil {
-			actions.Fatalf(err.Error())
+			return input{}, err
 		}
 		in.repository = repo
 	}
-
 	in.repository = removeOwnerFromRepository(in.repository, in.owner)
 
 	if in.sha == "" {
 		sha, err := getSHA()
 		if err != nil {
-			actions.Fatalf(err.Error())
+			return input{}, err
 		}
 		in.sha = sha
 	}
 
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: in.token},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-
-	client := github.NewClient(tc)
-
-	status := &github.RepoStatus{
-		State:       &in.state,
-		Context:     &in.context,
-		Description: &in.description,
-		TargetURL:   &in.detailsURL,
-	}
-
-	// Do a fibonacci backoff 1s -> 1s -> 2s -> 3s -> 5s -> 8s
-	if err := retry.Do(ctx, retry.WithMaxRetries(5, retry.NewFibonacci(1*time.Second)), func(ctx context.Context) error {
-		status, _, err = client.Repositories.CreateStatus(context.Background(), in.owner, in.repository, in.sha, status)
-		if err != nil {
-			actions.Errorf(err.Error())
-			// This marks the error as retryable
-			return retry.RetryableError(err)
-		}
-		return nil
-	}); err != nil {
-		actions.Fatalf(err.Error())
-	}
-
-	commitURL := fmt.Sprintf("https://github.com/%s/%s/commits/%s", in.owner, in.repository, in.sha)
-	actions.Infof("Updated status: \nID: %d \nState: %s \nURL: %s ", *status.ID, in.state, commitURL)
+	return in, nil
 }
 
-// getRequiredInputs checks the required inputs and returns an error
-// if they are not set.
-func getRequiredInputs(in input) error {
-	var err *multierror.Error
+// validateRequiredInputs validates that all required inputs are set.
+func validateRequiredInputs(in input) error {
+	// Accumulate errors
+	var errs *multierror.Error
+
 	if in.token == "" {
-		err = multierror.Append(err, errors.New(tokenRequiredErr))
+		errs = multierror.Append(errs, errors.New(tokenRequiredErr))
 	}
 
 	if in.state == "" {
-		err = multierror.Append(err, errors.New(stateRequiredErr))
+		errs = multierror.Append(errs, errors.New(stateRequiredErr))
 	}
 
-	if err != nil {
-		err.ErrorFormat = func(errs []error) string {
+	if errs != nil {
+		errs.ErrorFormat = func(errs []error) string {
 			var errStr []string
 			for _, e := range errs {
 				errStr = append(errStr, e.Error())
 			}
 			return strings.Join(errStr, ", ")
 		}
-		return err
+		return errs
 	}
+
 	return nil
 }
 
-// getRepositoryOwner gets github.repository_owner from the Github API.
+// getOwner gets github.repository_owner from the Github API.
 func getOwner() (string, error) {
 	owner := os.Getenv("GITHUB_OWNER")
 	if owner == "" {
@@ -145,7 +218,7 @@ func getOwner() (string, error) {
 	return owner, nil
 }
 
-// getRepositoryOwner gets github.repository_owner from the Github API.
+// getRepository gets github.repository_owner from the Github API.
 func getRepository() (string, error) {
 	repo := os.Getenv("GITHUB_REPOSITORY")
 	if repo == "" {
@@ -154,7 +227,7 @@ func getRepository() (string, error) {
 	return repo, nil
 }
 
-// getRepositoryOwner gets github.repository_owner from the Github API.
+// getSHA gets github.repository_owner from the Github API.
 func getSHA() (string, error) {
 	sha := os.Getenv("GITHUB_SHA")
 	if sha == "" {
@@ -163,21 +236,22 @@ func getSHA() (string, error) {
 	return sha, nil
 }
 
-// getAndValidateState validates that the state is a correct value. If the state is
+// convertActionStateToRepoStatusState validates that the state is a correct value. If the state is
 // 'cancel', 'cancelled'  or 'skipped' then return 'error' as the state.
 // 'Cancelled' can be a valid state if a workflow is cancelled.
-func getAndValidateState(s string) (string, error) {
-	switch s {
+func convertActionStateToRepoStatusState(actionState string) (string, error) {
+	switch actionState {
 	// success, error, failure or pending
 	case "error", "failure", "pending", "success":
-		return s, nil
+		return actionState, nil
 	case "cancel", "cancelled", "skipped":
 		return "error", nil
 	default:
-		return "", fmt.Errorf("state value not supported: %s", s)
+		return "", fmt.Errorf("state value not supported: %s", actionState)
 	}
 }
 
+// removeOwnerFromRepository removes the owner from the repository string.
 func removeOwnerFromRepository(repo, owner string) string {
 	return strings.ReplaceAll(repo, fmt.Sprintf("%s/", owner), "")
 }
