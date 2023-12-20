@@ -59,7 +59,7 @@ func main() {
 	}
 }
 
-// newGHClient creates a new github client for creating a github repo status.
+// newGHClient creates a new GitHub client for creating a GitHub repo status.
 func newGHClient(ctx context.Context, maxConnectionRetries uint64, getInputFunc getInputFunc) (ghClient, error) {
 	in, err := getInputs(getInputFunc)
 	if err != nil {
@@ -80,18 +80,22 @@ func newGHClient(ctx context.Context, maxConnectionRetries uint64, getInputFunc 
 	}, nil
 }
 
-// createStatus creates a new github repo status.
+// createStatus creates a new GitHub repo status.
 func (gh *ghClient) createStatus(ctx context.Context) error {
-	status := &github.RepoStatus{
-		State:       &gh.input.state,
-		Context:     &gh.input.context,
-		Description: &gh.input.description,
-		TargetURL:   &gh.input.detailsURL,
-	}
-
 	// Do a fibonacci backoff 1s -> 1s -> 2s -> 3s -> 5s -> 8s
 	var err error
+	var status *github.RepoStatus
 	err = retry.Do(ctx, retry.WithMaxRetries(gh.maxConnectionRetries, retry.NewFibonacci(1*time.Second)), func(ctx context.Context) error {
+		// Create the status each time in case we retry. Also, because we pass this in with a pointer, we can't be
+		// certain that `createStatus` won't modify the status.
+		status = &github.RepoStatus{
+			State:       &gh.input.state,
+			Context:     &gh.input.context,
+			Description: &gh.input.description,
+			TargetURL:   &gh.input.detailsURL,
+		}
+
+		// This call will overwrite the original status.
 		status, _, err = gh.client.CreateStatus(context.Background(), gh.input.owner, gh.input.repository, gh.input.sha, status)
 		if err != nil {
 			actions.Errorf("Error creating status %v. Owner: %s, SHA: %s, Repo %s: %s", gh.input.state, gh.input.owner, gh.input.sha, gh.input.repository, err.Error())
@@ -209,7 +213,7 @@ func validateRequiredInputs(in input) error {
 	return nil
 }
 
-// getOwner gets github.repository_owner from the Github API.
+// getOwner gets github.repository_owner from the GitHub API.
 func getOwner() (string, error) {
 	owner := os.Getenv("GITHUB_OWNER")
 	if owner == "" {
@@ -218,7 +222,7 @@ func getOwner() (string, error) {
 	return owner, nil
 }
 
-// getRepository gets github.repository_owner from the Github API.
+// getRepository gets github.repository_owner from the GitHub API.
 func getRepository() (string, error) {
 	repo := os.Getenv("GITHUB_REPOSITORY")
 	if repo == "" {
@@ -227,7 +231,7 @@ func getRepository() (string, error) {
 	return repo, nil
 }
 
-// getSHA gets github.repository_owner from the Github API.
+// getSHA gets github.repository_owner from the GitHub API.
 func getSHA() (string, error) {
 	sha := os.Getenv("GITHUB_SHA")
 	if sha == "" {
